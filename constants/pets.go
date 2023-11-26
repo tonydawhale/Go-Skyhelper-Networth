@@ -1,5 +1,10 @@
 package constants
 
+import (
+	"math"
+	"slices"
+)
+
 var PetSpecialLevels = map[string]int{
 	"GOLDEN_DRAGON": 200,
 }
@@ -22,7 +27,7 @@ var PetLevels = []int{
 	1886700, 1886700, 1886700, 1886700, 1886700, 1886700, 1886700, 1886700, 1886700, 1886700, 1886700, 1886700, 1886700, 1886700, 1886700, 1886700, 1886700, 1886700, 1886700, 1886700, 1886700, 1886700, 1886700,
 	1886700, 1886700, 1886700, 1886700, 1886700, 1886700, 1886700, 1886700, 1886700, 1886700, 1886700, 1886700, 1886700, 1886700, 1886700, 1886700, 1886700, 1886700, 1886700, 1886700, 1886700, 1886700, 1886700,
 	1886700, 1886700, 1886700, 1886700, 1886700, 1886700, 1886700, 1886700, 1886700, 1886700, 1886700, 1886700, 1886700, 1886700, 1886700, 1886700, 1886700, 1886700, 1886700, 1886700, 1886700, 1886700, 1886700,
-	1886700, 1886700, 1886700,
+	1886700, 1886700, 1886700, 1886700,
 }
 
 var BlockedCandyReducePets = []string{
@@ -53,4 +58,59 @@ var Tiers = []string{
 	"DIVINE",
 	"SPECIAL",
 	"VERY_SPECIAL",
+}
+
+type GetPetLevelReturn struct {
+	Level int
+	XpMax int
+}
+
+func GetPetLevel(pet map[string]interface{}) GetPetLevelReturn {
+	if pet["heldItem"] != nil && slices.Contains(RecombPetItems, pet["heldItem"].(string)) {
+		pet["tier"] = Tiers[slices.Index(Tiers, pet["tier"].(string))+1]
+	}
+	maxPetLevel := 100
+	if PetSpecialLevels[pet["type"].(string)] != 0 {
+		maxPetLevel = PetSpecialLevels[pet["type"].(string)]
+	}
+	petOffset := PetRartityOffset["COMMON"]
+	if pet["type"] != "BINGO" {
+		petOffset = PetRartityOffset[pet["tier"].(string)]
+	}
+
+	// Ensure that the slicing indices are within the valid range
+	startIndex := petOffset
+	endIndex := petOffset + maxPetLevel
+
+	if startIndex < 0 {
+		startIndex = 0
+	}
+
+	if endIndex > len(PetLevels) {
+		endIndex = len(PetLevels)
+	}
+
+	petLevels := PetLevels[startIndex:endIndex]
+
+	level := 1
+	totalXp := 0
+
+	for i := 0; i < maxPetLevel; i++ {
+		totalXp += petLevels[i]
+		if pet["exp"] != nil && totalXp > int(pet["exp"].(float64)) {
+			totalXp -= petLevels[i]
+			break
+		}
+		level++
+	}
+
+	var xpMax int
+	for _, level := range petLevels {
+		xpMax += level
+	}
+
+	return GetPetLevelReturn{
+		Level: int(math.Min(float64(level), float64(maxPetLevel))),
+		XpMax: xpMax,
+	}
 }
