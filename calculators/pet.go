@@ -69,7 +69,15 @@ func CalculatePet(pet map[string]interface{}, prices map[string]float64) (*struc
 		return nil, nil
 	}
 
-	
+	var price float64
+	if PetPriceData.Lvl200 != 0 {
+		price = PetPriceData.Lvl200
+	} else {
+		price = PetPriceData.Lvl100
+	}
+	calculation := make([]interface{}, 0)
 
-	if pet["level"]
+	if pet["level"].(int) < 100 && pet["xpMax"] != nil {
+
+	}
 }
